@@ -310,6 +310,93 @@ void tcp_puits(int port, int nb_message, int lg_msg, char* nom_station)
 		}
 	}
 }
+/*---------------------------Emetteur TCP--------------------------------------*/
+void emetteur_tcp(int port, int nb_message, int lg_msg, char* serveur_BAL)
+{
+    char message[lg_msg];
+	/*Declarations*/
+	int sock; //Représentation interne du socket local
+	struct sockaddr_in adr_distant; //Adresse du socket distant
+	int lg_adr_distant = sizeof(adr_distant);
+	struct hostent *hp;
+	char motif = 'a';
+
+	/*Phase d'etablissement de connexion*/
+
+	/*Création d'un socket local*/
+       	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+       	{
+               	printf("Echec de la creation du socket source TCP\n");
+               	exit(1);
+       	}
+
+    	/*Construction de l'adresse de socket distant*/
+    	//Affectation domaine et numero de port
+       	memset((char*)&adr_distant, 0, sizeof(adr_distant));
+       	adr_distant.sin_family = AF_INET; //domaine internet
+       	adr_distant.sin_port = htons(port); //num de port
+   		//Affectation adresse IP
+    	if((hp = gethostbyname(nom_station)) == NULL)
+      	{
+            printf("Erreur lors de la requete de l'adresse IP (gethostbyname).\n");
+        	exit(1);
+      	}
+    	memcpy((char*)&(adr_distant.sin_addr.s_addr), hp->h_addr, hp->h_length);
+
+	/*Demande de connexion*/
+	if(connect(sock,(struct sockaddr*) &adr_distant, lg_adr_distant) == -1)
+	{
+		perror("Erreur lors de la demande de la connexion (connect).\n");
+		exit(1);
+	}
+
+	printf("SOURCE : lg_mess_emis=%d, port=%d, nb_envois=%d, TP=tcp, dest=%s\n",lg_msg,port,nb_message,nom_station);
+
+	/*Phase de transfert de donnees*/
+	for (int i=1; i<=nb_message; i++)
+	{
+  		/*Creation du message*/
+	    construire_message(message, motif++,lg_msg);
+		afficher_message(message, lg_msg);
+
+		/*Envoi d'un message*/
+    	if ((write(sock, message, lg_msg)) == -1)
+		{
+		  	printf("Erreur lors de l'envoi du message (write).\n");
+			exit(1);
+		}
+	}
+
+
+	/*Phase de fermeture d'une connexion*/
+	if (shutdown(sock, 2) == -1)
+	{
+		printf("Erreur lors de la fermeture de la connexion (shutdown).\n");
+		exit(1);
+	}
+
+	/*Destruction du socket*/
+	if (close(sock) == -1)	
+	{
+		printf("Echec de destruction du socket");
+		exit(1);
+	}
+	else
+	{
+		printf("SOURCE : fin\n");
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
 /*---------------------------Programme Principal-------------------------------*/
 
 
